@@ -6,6 +6,7 @@ import { copy } from "@/lib/copy";
 import { REPORT_REASONS, REPORT_REASON_LABEL } from "@/lib/constants";
 import type { ChallengeCheckin, ReportReason } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { voteCheckin } from "@/lib/client-api";
 import { IdentityAvatar, MaskedMedia, Panel, SectionLabel } from "@/components/bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,30 +50,22 @@ export function PeerReviewBoard({ queue }: { queue: ChallengeCheckin[] }) {
       setError(copy.challenge.report.chooseAtLeastOne);
       return;
     }
-    await fetch("/api/checkins/vote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        checkinId: reportTarget.id,
-        reviewerId: "u-self",
-        verdict: "report",
-        reasons,
-      }),
-    }).catch(() => null);
+    await voteCheckin({
+      checkinId: reportTarget.id,
+      reviewerId: "u-self",
+      verdict: "report",
+      reasons,
+    });
     setVotes((prev) => ({ ...prev, [reportTarget.id]: "report" }));
     setReportDone(true);
   }
 
   async function approve(item: ChallengeCheckin) {
-    await fetch("/api/checkins/vote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        checkinId: item.id,
-        reviewerId: "u-self",
-        verdict: "approve",
-      }),
-    }).catch(() => null);
+    await voteCheckin({
+      checkinId: item.id,
+      reviewerId: "u-self",
+      verdict: "approve",
+    });
     setVotes((prev) => ({ ...prev, [item.id]: "approve" }));
   }
 

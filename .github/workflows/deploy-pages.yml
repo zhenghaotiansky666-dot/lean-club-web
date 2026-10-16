@@ -1,0 +1,70 @@
+name: Deploy static demo to GitHub Pages
+
+# 静态演示（GitHub Pages）：浏览器内生成订单 / 打卡对象（src/lib/client-api.ts），
+# 因此构建时需要：
+#   1) 移除 Route Handlers —— output: "export" 不支持 /api/* 动态路由
+#   2) 移除 "use cache" 指令 —— 该指令依赖 Cache Components，而它与静态导出互斥
+# 生产部署（Vercel / 自托管）不需要这些处理，直接 pnpm build 即可。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare static export
+        run: |
+          mv src/app/api .api-disabled
+          sed -i '/"use cache";/d' src/lib/data/mock.ts src/lib/data/supabase.ts
+
+      - name: Build static site
+        env:
+          STATIC_EXPORT: "1"
+          NEXT_PUBLIC_STATIC_DEMO: "1"
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+        run: pnpm build
+
+      - name: Disable Jekyll
+        run: touch out/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

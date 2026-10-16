@@ -10,6 +10,7 @@ import {
   TICKET_PRICE_CENTS,
 } from "@/lib/constants";
 import { formatCents } from "@/lib/format";
+import { confirmOrder, createOrder } from "@/lib/client-api";
 import type { PaymentGateway, PaymentOrder, ProductSku } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -48,17 +49,8 @@ export function UnlockDialog({
     setPhase("creating");
     setError(null);
     try {
-      const created = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sku, gateway, userId: "u-self" }),
-      }).then((r) => r.json() as Promise<PaymentOrder>);
-
-      const confirmed = await fetch("/api/checkout/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: created.orderId }),
-      }).then((r) => r.json() as Promise<PaymentOrder>);
+      const created = await createOrder({ sku, gateway, userId: "u-self" });
+      const confirmed = await confirmOrder(created);
 
       setOrder(confirmed);
       setPhase("paid");

@@ -13,6 +13,7 @@ import {
 import { copy } from "@/lib/copy";
 import { CHALLENGE_DAYS, DEPOSIT_CENTS } from "@/lib/constants";
 import { formatCentsCompact, formatDateCN } from "@/lib/format";
+import { submitCheckin } from "@/lib/client-api";
 import type { DailyChallenge } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { MaskedMedia, Panel, SectionLabel } from "@/components/bits";
@@ -33,16 +34,12 @@ export function CheckinPanel({ challenge }: { challenge: DailyChallenge }) {
 
   async function submit() {
     setSubmitting(true);
-    // 客户端不直接引数据层：写入统一走 Route Handler
-    await fetch("/api/checkins", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: "u-self",
-        day: challenge.day,
-        gesture: challenge.requiredGesture,
-      }),
-    }).catch(() => null);
+    // 写入统一走客户端通道（Node 环境为 Route Handler；静态演示在浏览器内生成）
+    await submitCheckin({
+      userId: "u-self",
+      day: challenge.day,
+      gesture: challenge.requiredGesture,
+    });
     setSubmitting(false);
     setSubmitted(true);
   }
