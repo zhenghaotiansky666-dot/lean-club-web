@@ -12,6 +12,11 @@
 
 # testing
 /coverage
+/test-results
+/playwright-report
+/blob-report
+/screenshots/*
+!/screenshots/.gitkeep
 
 # next.js
 /.next/
